@@ -1,25 +1,32 @@
 import { Queue } from "bullmq";
 import { redis } from "@/lib/redis";
-import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
-import type { NextApiRequest, NextApiResponse } from "next";
+import { headers } from "next/headers";
 
-const queue = new Queue("pdf-summarization", { connection: redis });
+export async function POST(req: Request) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user?.id) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+    });
+  }
 
-export default async function POST(req: NextApiRequest, res: NextApiResponse) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-  if (!session?.user?.id)
-    return res.status(401).json({ error: "Unauthorized" });
+  const body = await req.json();
+  const { fileUrl } = body;
+  if (!fileUrl) {
+    return new Response(JSON.stringify({ error: "Missing fileUrl" }), {
+      status: 400,
+    });
+  }
 
-  const { fileUrl } = req.body;
-  if (!fileUrl) return res.status(400).json({ error: "Missing fileUrl" });
+  const queue = new Queue("pdf-summarization", { connection: redis });
 
   await queue.add("summarize", {
     fileUrl,
     userId: session.user.id,
   });
 
-  return res.status(200).json({ status: "queued" });
+  return new Response(JSON.stringify({ status: "queued" }), {
+    status: 200,
+  });
 }

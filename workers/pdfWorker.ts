@@ -1,13 +1,13 @@
 import { Worker } from "bullmq";
-import { redis } from "@/lib/redis";
 import { PrismaClient } from "@prisma/client";
-import { ChatOpenAI } from "@langchain/openai";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import fetch from "node-fetch";
 import fs from "fs/promises";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
 import { Document } from "@langchain/core/documents";
+import { redis } from "../lib/redis";
 
 const prisma = new PrismaClient();
 
@@ -20,23 +20,25 @@ const worker = new Worker(
 
     const res = await fetch(fileUrl);
     if (!res.ok) throw new Error("Failed to download PDF from S3");
-    const buffer = await res.buffer();
+    const buffer = await res.arrayBuffer();
 
     const tempFilename = path.join("/tmp", `${uuidv4()}.pdf`);
-    await fs.writeFile(tempFilename, buffer);
+    await fs.writeFile(tempFilename, Buffer.from(buffer));
 
     try {
       const loader = new PDFLoader(tempFilename);
       const docs: Document[] = await loader.load();
       const text = docs.map((doc) => doc.pageContent).join("\n");
 
-      const model = new ChatOpenAI({
+      const model = new ChatGoogleGenerativeAI({
+        model: "gemini-1.5-flash",
         temperature: 0.7,
-        modelName: "gpt-3.5-turbo",
-        openAIApiKey: process.env.OPENAI_API_KEY!,
+        apiKey: process.env.GOOGLE_API_KEY!,
       });
 
-      const response = await model.call([
+      console.log(text.slice(0, 12000));
+
+      const response = await model.invoke([
         {
           role: "user",
           content: `Summarize the following document:\n\n${text.slice(
@@ -45,6 +47,8 @@ const worker = new Worker(
           )}`,
         },
       ]);
+
+      console.log(response);
 
       const summary = (response?.content as string) ?? "Summary failed";
 
