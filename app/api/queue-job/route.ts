@@ -4,12 +4,12 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import type { NextApiRequest, NextApiResponse } from "next";
 
-const session = await auth.api.getSession({
-  headers: await headers(),
-});
 const queue = new Queue("pdf-summarization", { connection: redis });
 
 export default async function POST(req: NextApiRequest, res: NextApiResponse) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
   if (!session?.user?.id)
     return res.status(401).json({ error: "Unauthorized" });
 

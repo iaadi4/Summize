@@ -19,7 +19,7 @@ export async function GET(req: Request) {
     }
 
     const command = new PutObjectCommand({
-        Bucket: process.env.AWS_S3_BUCKET_NAME!,
+        Bucket: process.env.AWS_BUCKET_NAME!,
         Key: fileName,
         ContentType: fileType,
     });
