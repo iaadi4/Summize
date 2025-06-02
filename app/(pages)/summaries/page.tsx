@@ -40,7 +40,9 @@ export default function SummariesPage() {
   const fetchSummaries = async (): Promise<void> => {
     try {
       setLoading(true);
-      const response = await fetch('/api/summary');
+      const response = await fetch('/api/summary', {
+        method: "GET"
+      });
       const data: SummariesResponse = await response.json();
       
       if (!response.ok) {
@@ -54,6 +56,8 @@ export default function SummariesPage() {
       setLoading(false);
     }
   };
+
+  console.log(summaries);
 
   const handleRefresh = async (): Promise<void> => {
     setRefreshing(true);

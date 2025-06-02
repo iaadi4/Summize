@@ -1,13 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { PrismaClient } from "@prisma/client";
+import { headers } from "next/headers";
 
 const prisma = new PrismaClient();
 
-export async function GET(req: NextRequest) {
+export async function GET() {
     try {
         const session = await auth.api.getSession({
-            headers: req.headers
+            headers: await headers()
         })
         if(!session?.user) {
             return NextResponse.json({
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
         })
         return NextResponse.json({
             summaries
-        }, { status: 2000})
+        }, { status: 200 })
     } catch (error) {
         console.error("Error fetching summaries:", error);
         return NextResponse.json({
