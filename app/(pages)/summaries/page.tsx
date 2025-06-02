@@ -13,51 +13,63 @@ import {
 } from "react-icons/fi";
 import Link from "next/link";
 
+interface PdfSummary {
+  id: string;
+  fileUrl: string;
+  userId: string;
+  summary: string;
+  createdAt: string;
+}
+
+interface SummariesResponse {
+  summaries: PdfSummary[];
+}
+
 export default function SummariesPage() {
-  const [summaries, setSummaries] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedSummary, setSelectedSummary] = useState(null);
-  const [refreshing, setRefreshing] = useState(false);
+  const [summaries, setSummaries] = useState<PdfSummary[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [selectedSummary, setSelectedSummary] = useState<PdfSummary | null>(null);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
 
   useEffect(() => {
     fetchSummaries();
   }, []);
 
-  const fetchSummaries = async () => {
+  const fetchSummaries = async (): Promise<void> => {
     try {
       setLoading(true);
       const response = await fetch('/api/summary');
-      const data = await response.json();
+      const data: SummariesResponse = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch summaries');
+        throw new Error((data as SummariesResponse & { error?: string }).error || 'Failed to fetch summaries');
       }
       
       setSummaries(data.summaries || []);
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRefresh = async () => {
+  const handleRefresh = async (): Promise<void> => {
     setRefreshing(true);
     await fetchSummaries();
     setRefreshing(false);
   };
 
-  const handleViewSummary = (summary) => {
+  const handleViewSummary = (summary: PdfSummary): void => {
     setSelectedSummary(summary);
   };
 
-  const handleCloseSummary = () => {
+  const handleCloseSummary = (): void => {
     setSelectedSummary(null);
   };
 
-  const handleDeleteSummary = async (summaryId) => {
+  const handleDeleteSummary = async (summaryId: string): Promise<void> => {
     if (!confirm('Are you sure you want to delete this summary?')) return;
     
     try {
@@ -73,7 +85,7 @@ export default function SummariesPage() {
     }
   };
 
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string): string => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -83,7 +95,7 @@ export default function SummariesPage() {
     });
   };
 
-  const getFileName = (fileUrl) => {
+  const getFileName = (fileUrl: string): string => {
     return fileUrl.split('/').pop() || 'Document';
   };
 
@@ -107,7 +119,6 @@ export default function SummariesPage() {
 
   return (
     <div className="min-h-screen bg-[#0A0C10] text-[#E0E0FF] font-sans">
-      {/* Navigation */}
       <nav className="bg-[#0D1117] border-b border-[#1C2333] shadow-[0_4px_20px_rgba(0,221,255,0.08)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
@@ -134,7 +145,6 @@ export default function SummariesPage() {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
         <div className="mb-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
             <div>
@@ -155,7 +165,6 @@ export default function SummariesPage() {
             </button>
           </div>
 
-          {/* Search and Filter */}
           <div className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="relative flex-1">
               <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8B9AC0] h-4 w-4" />
@@ -170,14 +179,12 @@ export default function SummariesPage() {
           </div>
         </div>
 
-        {/* Error State */}
         {error && (
           <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 mb-6">
             <p className="text-red-400">Error: {error}</p>
           </div>
         )}
 
-        {/* Empty State */}
         {!loading && filteredSummaries.length === 0 && !error && (
           <div className="text-center py-16">
             <div className="h-16 w-16 bg-[#131620] border border-[#2F3B54] rounded-full flex items-center justify-center mx-auto mb-4">
@@ -202,7 +209,6 @@ export default function SummariesPage() {
           </div>
         )}
 
-        {/* Summaries Grid */}
         {filteredSummaries.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredSummaries.map((summary) => (
@@ -271,8 +277,7 @@ export default function SummariesPage() {
           </div>
         )}
       </div>
-
-      {/* Summary Modal */}
+      
       {selectedSummary && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-[#0D1117] border border-[#1C2333] rounded-xl max-w-4xl max-h-[80vh] overflow-hidden">
